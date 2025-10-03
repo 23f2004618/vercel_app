@@ -42,10 +42,10 @@ async def metrics(request: Request):
         uptimes = [r["uptime_pct"] for r in records]
 
         avg_latency = statistics.mean(latencies)
-        if len(latencies) >= 20:
-            p95_latency = statistics.quantiles(latencies, n=100)[94]
-        else:
-            p95_latency = sorted(latencies)[int(0.95 * (len(latencies) - 1))]
+
+        # strict 95th percentile using linear interpolation
+        p95_latency = float(np.percentile(latencies, 95, method="linear"))
+
 
         avg_uptime = statistics.mean(uptimes)
         breaches = sum(1 for l in latencies if l > threshold)
