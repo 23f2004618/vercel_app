@@ -1,12 +1,13 @@
 import json
 import statistics
+import numpy as np
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 
 app = FastAPI()
 
-# Enable CORS globally
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -15,7 +16,6 @@ app.add_middleware(
     expose_headers=["*"]
 )
 
-# Load telemetry once
 with open("telemetry.json") as f:
     TELEMETRY = json.load(f)
 
@@ -46,21 +46,17 @@ async def metrics(request: Request):
         # strict 95th percentile using linear interpolation
         p95_latency = float(np.percentile(latencies, 95, method="linear"))
 
-
         avg_uptime = statistics.mean(uptimes)
         breaches = sum(1 for l in latencies if l > threshold)
 
         results[region] = {
-            "avg_latency": avg_latency,
-            "p95_latency": p95_latency,
-            "avg_uptime": avg_uptime,
+            "avg_latency": round(avg_latency, 2),
+            "p95_latency": round(p95_latency, 2),
+            "avg_uptime": round(avg_uptime, 3),
             "breaches": breaches,
         }
 
-    # Wrap inside "regions"
-    payload = {"regions": results}
-
     return JSONResponse(
-        content=payload,
-        headers={"Access-Control-Allow-Origin": "*"}
+        content={"regions": results},
+        headers={"Access-Control-Allow-Origin": "*"},
     )
