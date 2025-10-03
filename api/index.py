@@ -6,7 +6,7 @@ from starlette.responses import JSONResponse
 
 app = FastAPI()
 
-# CORS middleware
+# Enable CORS globally
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -57,8 +57,10 @@ async def metrics(request: Request):
             "breaches": breaches,
         }
 
-    # Force CORS headers explicitly
+    # Wrap inside "regions"
+    payload = {"regions": results}
+
     return JSONResponse(
-        content=results,
+        content=payload,
         headers={"Access-Control-Allow-Origin": "*"}
     )
