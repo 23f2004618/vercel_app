@@ -27,7 +27,8 @@ async def metrics(request: Request):
 
     results = {}
     for region in regions:
-        records = TELEMETRY.get(region, [])
+        # filter telemetry for this region
+        records = [r for r in TELEMETRY if r["region"] == region]
 
         if not records:
             results[region] = {
@@ -39,10 +40,16 @@ async def metrics(request: Request):
             continue
 
         latencies = [r["latency_ms"] for r in records]
-        uptimes = [r["uptime"] for r in records]
+        uptimes = [r["uptime_pct"] for r in records]
 
         avg_latency = statistics.mean(latencies)
-        p95_latency = statistics.quantiles(latencies, n=100)[94]  # 95th percentile
+        # 95th percentile (statistics.quantiles needs at least n=100 samples for accuracy,
+        # so fallback to sorted[-1] if dataset small)
+        if len(latencies) >= 20:
+            p95_latency = statistics.quantiles(latencies, n=100)[94]
+        else:
+            p95_latency = sorted(latencies)[int(0.95 * (len(latencies) - 1))]
+
         avg_uptime = statistics.mean(uptimes)
         breaches = sum(1 for l in latencies if l > threshold)
 
