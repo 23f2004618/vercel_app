@@ -1,23 +1,11 @@
-
 {
-  "version": 2,
   "builds": [
     {
-      "src": "api/latency.py",
+      "src": "api/index.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "api/latency.py"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "api/latency.py"
-    }
-  ],
-  "env": {
-    "PYTHONPATH": "/var/task"
-  }
+    { "src": "/(.*)", "dest": "api/index.py" }
+  ]
 }
