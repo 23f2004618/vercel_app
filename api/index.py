@@ -6,15 +6,16 @@ from starlette.responses import JSONResponse
 
 app = FastAPI()
 
-# enable CORS for all origins
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_methods=["POST"],
+    allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
 
-# load telemetry bundle at cold start
+# Load telemetry once
 with open("telemetry.json") as f:
     TELEMETRY = json.load(f)
 
@@ -27,9 +28,7 @@ async def metrics(request: Request):
 
     results = {}
     for region in regions:
-        # filter telemetry for this region
         records = [r for r in TELEMETRY if r["region"] == region]
-
         if not records:
             results[region] = {
                 "avg_latency": None,
@@ -43,8 +42,6 @@ async def metrics(request: Request):
         uptimes = [r["uptime_pct"] for r in records]
 
         avg_latency = statistics.mean(latencies)
-        # 95th percentile (statistics.quantiles needs at least n=100 samples for accuracy,
-        # so fallback to sorted[-1] if dataset small)
         if len(latencies) >= 20:
             p95_latency = statistics.quantiles(latencies, n=100)[94]
         else:
@@ -60,4 +57,8 @@ async def metrics(request: Request):
             "breaches": breaches,
         }
 
-    return JSONResponse(content=results)
+    # Force CORS headers explicitly
+    return JSONResponse(
+        content=results,
+        headers={"Access-Control-Allow-Origin": "*"}
+    )
